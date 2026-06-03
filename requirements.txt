@@ -1,0 +1,45 @@
+# ── Web Framework ──────────────────────────────────────────
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.12
+
+# ── LLM & Orchestration ────────────────────────────────────
+langchain==0.3.7
+langchain-community==0.3.7
+langchain-openai==0.2.9
+openai==1.54.3
+
+# ── Vector Database (RAG) ──────────────────────────────────
+chromadb==0.5.20
+
+# ── Embeddings ─────────────────────────────────────────────
+sentence-transformers==3.3.1
+tiktoken==0.8.0
+
+# ── Document Parsing ───────────────────────────────────────
+pypdf==5.1.0
+python-docx==1.1.2
+docx2txt==0.8
+
+# ── Database (PostgreSQL) ──────────────────────────────────
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.35
+alembic==1.13.3
+
+# ── Authentication ─────────────────────────────────────────
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# ── Data Validation & Config ───────────────────────────────
+pydantic==2.9.2
+pydantic-settings==2.6.1
+python-dotenv==1.0.1
+email-validator==2.1.1
+
+# ── Google Gemini ──────────────────────────────────────────
+langchain-google-genai
+google-generativeai
+
+# ── Utilities ──────────────────────────────────────────────
+numpy==1.26.4
+aiofiles==23.2.1

@@ -1,0 +1,28 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# Vector Store (ChromaDB data — too large for git)
+Backend/vector_store/
+Backend/uploads/
+
+# Node
+Frontend/node_modules/
+Frontend/.next/
+Frontend/.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
