@@ -114,6 +114,24 @@ class GeminiEmbeddings(Embeddings):
         return r.embeddings[0].values
 
 
+NOT_FOUND_PHRASES = [
+    "could not find",
+    "not found in the document",
+    "not mentioned",
+    "no information",
+    "doesn't contain",
+    "does not contain",
+    "not available in",
+    "not covered in",
+    "not specified in",
+]
+
+def _answer_not_found(answer: str) -> bool:
+    """Returns True if the answer indicates the info was not in the document."""
+    lower = answer.lower()
+    return any(phrase in lower for phrase in NOT_FOUND_PHRASES)
+
+
 def _generate_answer(context: str, question: str) -> str:
     """Calls Gemini 2.5 Flash to generate an answer. Retries on 429 quota errors."""
     import time
@@ -294,18 +312,21 @@ async def run_knowledge_search(file: UploadFile, question: str, db: Session) -> 
     # Generate answer
     answer = _generate_answer(context, question)
 
-    # Collect all unique page numbers from retrieved chunks
-    pages = sorted(set(
-        int(d.metadata["page"]) + 1
-        for d in source_docs
-        if d.metadata.get("page") is not None
-    ))
-
-    if pages:
-        page_str = ", ".join(f"Page {p}" for p in pages)
-        source = f"{file.filename} — {page_str}"
-    else:
+    # Only show page references if answer actually found the information
+    if _answer_not_found(answer):
+        pages  = []
         source = file.filename
+    else:
+        pages = sorted(set(
+            int(d.metadata["page"]) + 1
+            for d in source_docs
+            if d.metadata.get("page") is not None
+        ))
+        if pages:
+            page_str = ", ".join(f"Page {p}" for p in pages)
+            source = f"{file.filename} — {page_str}"
+        else:
+            source = file.filename
 
     # Save to search_history
     db.add(SearchHistory(
@@ -346,17 +367,21 @@ async def run_query_by_document_id(document_id: int, question: str, db: Session)
     context     = "\n\n".join(d.page_content for d in source_docs)
     answer      = _generate_answer(context, question)
 
-    pages = sorted(set(
-        int(d.metadata["page"]) + 1
-        for d in source_docs
-        if d.metadata.get("page") is not None
-    ))
-
-    if pages:
-        page_str = ", ".join(f"Page {p}" for p in pages)
-        source = f"{doc.filename} — {page_str}"
-    else:
+    # Only show page references if answer actually found the information
+    if _answer_not_found(answer):
+        pages  = []
         source = doc.filename
+    else:
+        pages = sorted(set(
+            int(d.metadata["page"]) + 1
+            for d in source_docs
+            if d.metadata.get("page") is not None
+        ))
+        if pages:
+            page_str = ", ".join(f"Page {p}" for p in pages)
+            source = f"{doc.filename} — {page_str}"
+        else:
+            source = doc.filename
 
     db.add(SearchHistory(
         document_id=doc.id,

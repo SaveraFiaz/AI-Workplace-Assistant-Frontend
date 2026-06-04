@@ -393,7 +393,7 @@ export default function ContractAnalyzer() {
               type="text"
               value={termInput}
               onChange={e => setTermInput(e.target.value)}
-              placeholder='e.g. indemnification, force majeure, arbitration...'
+              placeholder='Type a legal term to explain...'
               className="flex-1 bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/40 transition-all"
             />
             <button
@@ -452,11 +452,7 @@ export default function ContractAnalyzer() {
                 </div>
               )}
             </div>
-          ) : (
-            !termLoading && (
-              <p className="text-center py-6 text-slate-600 text-sm">Search any legal term above to get a simple explanation</p>
-            )
-          )}
+          ) : null}
         </div>
 
       </div>

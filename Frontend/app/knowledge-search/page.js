@@ -115,7 +115,13 @@ export default function KnowledgeSearch() {
     e.preventDefault();
     if (!question.trim() || !selectedDoc || processing) return;
     const asked = question.trim();
+
+    // Step 1: show question immediately + typing indicator — ChatGPT style
+    const idx = Date.now(); // unique id for this message
+    setHistory(prev => [...prev, { id: idx, question: asked, answer: null, loading: true }]);
+    setQuestion('');       // clear input right away
     setLoading(true);
+
     try {
       const res  = await fetch(`${getAPI()}/knowledge-search/query`, {
         method:  'POST',
@@ -125,24 +131,24 @@ export default function KnowledgeSearch() {
       const data = await res.json();
 
       if (!res.ok) {
-        // Show actual server error (e.g. quota exhausted)
         let errMsg = data.detail || 'Server error. Please try again.';
         if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota')) {
-          errMsg = 'Gemini API daily quota exceeded (20 requests/day on free tier). Please wait until tomorrow or upgrade your Google AI plan.';
+          errMsg = 'Gemini API daily quota exceeded (20 requests/day on free tier). Please wait until tomorrow or upgrade your plan.';
         }
-        setHistory(prev => [...prev, { question: asked, error: errMsg }]);
+        // Step 2a: replace loading state with error
+        setHistory(prev => prev.map(h =>
+          h.id === idx ? { ...h, loading: false, error: errMsg } : h
+        ));
       } else {
-        setHistory(prev => [...prev, {
-          question: asked,
-          answer:   data.answer,
-          source:   data.source,
-          pages:    data.pages || [],
-        }]);
+        // Step 2b: replace loading state with real answer
+        setHistory(prev => prev.map(h =>
+          h.id === idx ? { ...h, loading: false, answer: data.answer, source: data.source, pages: data.pages || [] } : h
+        ));
       }
-      setQuestion('');
     } catch {
-      setHistory(prev => [...prev, { question: asked, error: 'Cannot reach backend. Make sure the server is running.' }]);
-      setQuestion('');
+      setHistory(prev => prev.map(h =>
+        h.id === idx ? { ...h, loading: false, error: 'Cannot reach backend. Make sure the server is running.' } : h
+      ));
     } finally {
       setLoading(false);
     }
@@ -405,70 +411,69 @@ export default function KnowledgeSearch() {
           </div>
         )}
 
-        {/* Q&A history */}
-        <div className="space-y-4 mb-6">
-          {history.map((item, i) => (
-            <div key={i} className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden">
-              {item.error && !item.question ? (
-                <div className="px-5 py-4 flex items-center gap-2 text-red-400">
-                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="text-sm">{item.error}</p>
+        {/* Q&A history — ChatGPT style */}
+        <div className="space-y-6 mb-6">
+          {history.map((item) => (
+            <div key={item.id}>
+
+              {/* User question — right aligned */}
+              <div className="flex justify-end mb-3">
+                <div className="max-w-[80%] bg-indigo-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm font-medium shadow-lg shadow-indigo-500/10">
+                  {item.question}
                 </div>
-              ) : (
-                <>
-                  <div className="flex items-start gap-3 px-5 py-4 bg-slate-800/40 border-b border-white/5">
-                    <div className="w-6 h-6 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-xs font-bold text-indigo-400 shrink-0 mt-0.5">Q</div>
-                    <p className="text-slate-200 text-sm font-medium">{item.question}</p>
-                  </div>
-                  <div className="px-5 py-4">
-                    {item.error ? (
-                      <p className="text-red-400 text-sm">{item.error}</p>
-                    ) : (
-                      <>
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-xs font-bold text-emerald-400">A</div>
-                          <span className="text-xs text-slate-500">AI Answer</span>
-                        </div>
-                        <p className="text-white text-sm leading-relaxed ml-8">{item.answer}</p>
-                        {item.source && (
-                          <div className="ml-8 mt-4 flex items-start gap-2 bg-indigo-500/5 border border-indigo-500/20 rounded-xl px-4 py-3">
-                            <svg className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <div>
-                              <p className="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-0.5">Source Reference</p>
-                              <p className="text-slate-300 text-sm font-medium">{item.source}</p>
-                              {item.pages && item.pages.length > 0 && (
-                                <div className="flex flex-wrap gap-1.5 mt-2">
-                                  {item.pages.map(p => (
-                                    <span key={p} className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-xs font-bold rounded-md border border-indigo-500/30">
-                                      Page {p}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
+              </div>
+
+              {/* AI answer — left aligned */}
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20 mt-0.5">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  {item.loading ? (
+                    /* Typing indicator while waiting */
+                    <div className="bg-slate-900 border border-white/5 rounded-2xl rounded-tl-sm px-5 py-4 inline-flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  ) : item.error ? (
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-2xl rounded-tl-sm px-5 py-4 text-red-400 text-sm">
+                      {item.error}
+                    </div>
+                  ) : (
+                    <div className="bg-slate-900 border border-white/5 rounded-2xl rounded-tl-sm px-5 py-4">
+                      <p className="text-white text-sm leading-relaxed">{item.answer}</p>
+
+                      {/* Source reference — only shown when answer found info */}
+                      {item.source && item.pages && item.pages.length > 0 && (
+                        <div className="mt-4 flex items-start gap-2 bg-indigo-500/5 border border-indigo-500/20 rounded-xl px-4 py-3">
+                          <svg className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <div>
+                            <p className="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-0.5">Source Reference</p>
+                            <p className="text-slate-300 text-sm">{item.source}</p>
+                            {item.pages && item.pages.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mt-2">
+                                {item.pages.map(p => (
+                                  <span key={p} className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-xs font-bold rounded-md border border-indigo-500/30">
+                                    Page {p}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </>
-              )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
             </div>
           ))}
-
-          {loading && (
-            <div className="bg-slate-900 border border-white/5 rounded-2xl px-5 py-4 flex items-center gap-3 text-slate-400">
-              <svg className="w-4 h-4 animate-spin text-indigo-400" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              <span className="text-sm">Searching document...</span>
-            </div>
-          )}
           <div ref={bottomRef} />
         </div>
       </div>
