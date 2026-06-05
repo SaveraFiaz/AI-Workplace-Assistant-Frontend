@@ -1,11 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 
-// Always computed at call time so it works regardless of SSR/network IP
-const getAPI = () => {
-  if (typeof window === 'undefined') return 'http://localhost:8000/api';
-  return `${window.location.protocol}//${window.location.hostname}:8000/api`;
-};
+const getAPI = () => 'https://ai-workplace-assistant-frontend-61n2.onrender.com/api';
 
 export default function KnowledgeSearch() {
   const [view,        setView]        = useState('library'); // 'library' | 'qa'

@@ -1,9 +1,7 @@
 'use client';
 import { useState } from 'react';
 
-const API = typeof window !== 'undefined'
-  ? `${window.location.protocol}//${window.location.hostname}:8000/api`
-  : 'http://localhost:8000/api';
+const API = 'https://ai-workplace-assistant-frontend-61n2.onrender.com/api';
 
 const TONES = [
   {
