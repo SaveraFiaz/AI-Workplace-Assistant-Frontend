@@ -1,4 +1,5 @@
 import traceback
+import time
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,7 +13,18 @@ from modules.email_reply.router import router as er_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    create_tables()
+    # Retry DB connection up to 5 times (Render DB may take a moment to be ready)
+    for attempt in range(5):
+        try:
+            create_tables()
+            print("Database tables created successfully.")
+            break
+        except Exception as e:
+            print(f"DB connection attempt {attempt + 1}/5 failed: {e}")
+            if attempt < 4:
+                time.sleep(3)
+            else:
+                print("Could not connect to database after 5 attempts. Starting anyway.")
     yield
 
 
@@ -25,7 +37,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # allow all origins during development
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

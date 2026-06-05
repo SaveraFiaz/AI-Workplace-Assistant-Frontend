@@ -17,7 +17,13 @@ from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 from core.config import settings
 
-engine       = create_engine(settings.DATABASE_URL)
+# Add SSL for Render PostgreSQL connections
+db_url = settings.DATABASE_URL
+connect_args = {}
+if "render.com" in db_url or "postgres.render.com" in db_url:
+    connect_args = {"sslmode": "require"}
+
+engine       = create_engine(db_url, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base         = declarative_base()
 
