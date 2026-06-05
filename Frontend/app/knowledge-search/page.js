@@ -77,7 +77,7 @@ export default function KnowledgeSearch() {
     try {
       // 3 minute timeout — large docs with many chunks need time to embed
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 180000);
+      const timeout = setTimeout(() => controller.abort(), 300000); // 5 min — Render cold start can take 60s
 
       const res  = await fetch(`${getAPI()}/knowledge-search/upload`, {
         method: 'POST',
@@ -98,7 +98,7 @@ export default function KnowledgeSearch() {
       if (err.name === 'AbortError') {
         setHistory([{ error: 'Indexing is taking too long. Try uploading a smaller document or check your internet connection.' }]);
       } else {
-        setHistory([{ error: 'Cannot connect to backend. Make sure the server is running on port 8000 with: python -m uvicorn main:app --host 0.0.0.0 --port 8000' }]);
+        setHistory([{ error: 'Server is waking up (Render free tier). Please wait 30-60 seconds and try again.' }]);
       }
     } finally {
       setUploading(false);
